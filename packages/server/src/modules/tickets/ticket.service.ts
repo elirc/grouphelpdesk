@@ -17,12 +17,14 @@ import { canBeAssignedTicket, canMoveToInProgress } from './ticket.permissions';
 import { createTicketRepository } from './ticket.repository';
 import type { TicketRepository } from './ticket.types';
 
+type AuthenticatedCreateTicketInput = CreateTicketInput & { createdBy: string };
+
 export function createTicketService(
   repository: TicketRepository = createTicketRepository(),
   activityLog = createActivityLogService(),
 ) {
   return {
-    async createTicket(input: CreateTicketInput) {
+    async createTicket(input: AuthenticatedCreateTicketInput) {
       const creator = await repository.findUserById(input.createdBy);
       if (!creator) {
         throw new ValidationError('Ticket creator must reference an existing user.');

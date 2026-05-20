@@ -11,8 +11,6 @@ interface TicketFormProps {
   onSubmit: (input: CreateTicketInput) => Promise<void>;
 }
 
-const DEFAULT_REQUESTER_ID = 'user_requester_1';
-
 export function TicketForm({ onSubmit }: TicketFormProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -38,7 +36,6 @@ export function TicketForm({ onSubmit }: TicketFormProps) {
         title,
         description,
         priority,
-        createdBy: DEFAULT_REQUESTER_ID,
         tags: splitTags(tags),
       });
       setTitle('');

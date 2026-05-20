@@ -29,7 +29,7 @@ export const createTicketBodySchema = z.object({
   title: z.string().trim().min(1, 'title is required'),
   description: z.string().trim().min(1, 'description is required'),
   priority: z.nativeEnum(Priority),
-  createdBy: z.string().trim().min(1, 'createdBy is required'),
+  createdBy: z.string().trim().min(1).optional(),
   assigneeId: nullableOptionalString(),
   teamId: nullableOptionalString(),
   tags: z.array(z.string().trim().min(1)).optional().default([]),

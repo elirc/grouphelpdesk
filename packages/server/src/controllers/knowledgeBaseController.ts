@@ -30,10 +30,13 @@ export async function getArticle(_req: Request, res: Response, next: NextFunctio
   }
 }
 
-export async function createArticle(_req: Request, res: Response, next: NextFunction) {
+export async function createArticle(req: Request, res: Response, next: NextFunction) {
   try {
     const body = getValidatedBody<ArticleBody>(res);
-    const article = await knowledgeBaseService.createArticle(body);
+    const article = await knowledgeBaseService.createArticle({
+      ...body,
+      authorId: req.currentUser!.id,
+    });
     res.status(201).json({ data: article });
   } catch (error) {
     next(error);

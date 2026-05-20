@@ -24,7 +24,7 @@ export interface CreateTicketInput {
   title: string;
   description: string;
   priority: Priority;
-  createdBy: string;
+  createdBy?: string;
   assigneeId?: string | null;
   teamId?: string | null;
   tags?: string[];

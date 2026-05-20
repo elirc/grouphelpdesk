@@ -264,3 +264,90 @@ shape points to the mapper.
 - Does the service avoid Express-specific response concerns?
 - Does the repository avoid workflow decisions?
 - Are tests aligned with the new responsibility boundaries?
+
+## 2026-05-20 - Phase 4: Real Authentication And RBAC
+
+### Files Changed
+
+- `packages/server/prisma/schema.prisma`
+- `packages/server/prisma/seed.ts`
+- `packages/server/src/routes/auth.ts`
+- `packages/server/src/controllers/authController.ts`
+- `packages/server/src/services/authService.ts`
+- `packages/server/src/middleware/auth.ts`
+- `packages/server/src/utils/password.ts`
+- `packages/server/src/types/express.d.ts`
+- `packages/server/src/modules/tickets/ticket.routes.ts`
+- `packages/server/src/modules/tickets/ticket.controller.ts`
+- `packages/server/src/routes/comments.ts`
+- `packages/server/src/controllers/commentController.ts`
+- `packages/server/src/routes/dashboard.ts`
+- `packages/server/src/routes/knowledgeBase.ts`
+- `packages/server/src/controllers/knowledgeBaseController.ts`
+- `packages/client/src/auth/AuthProvider.tsx`
+- `packages/client/src/auth/ProtectedRoute.tsx`
+- `packages/client/src/pages/LoginPage.tsx`
+- `packages/client/src/App.tsx`
+- `packages/client/src/services/api.ts`
+- `tests/unit/authService.test.ts`
+- `docs/learning/auth-and-rbac-guide.md`
+- `docs/learning/security-mistakes-in-crud-apps.md`
+
+### Summary Of Change
+
+Added a learning-friendly authentication and RBAC flow. Users now have password
+hashes, can log in through `/api/auth/login`, receive an opaque bearer session
+token, and access protected routes through auth middleware. The frontend now has
+an auth provider, a login page, and protected application routes.
+
+### Reason For Change
+
+The previous app trusted client-provided identity fields such as `createdBy`,
+`authorId`, `actorId`, and `viewerRole`. That is acceptable in early scaffolding
+but teaches the wrong security habit if left in place.
+
+This phase moves identity-sensitive decisions to the server.
+
+### What Skill This Teaches
+
+This teaches the difference between authentication, authorization, and frontend
+route protection. It also teaches that TypeScript types do not make HTTP input
+trustworthy.
+
+A mid-level engineer should notice where identity comes from and whether the
+backend is enforcing the rule.
+
+### Tradeoffs
+
+Sessions are stored in memory. That keeps the implementation easy to read, but
+sessions disappear when the server restarts and would not work across multiple
+server instances.
+
+Tokens are stored in localStorage. That is simple for a learning app, but a
+production app would need a deeper discussion of XSS, cookies, CSRF, expiration,
+and refresh tokens.
+
+### Future Improvement Ideas
+
+- Add database-backed sessions with expiration.
+- Add ownership checks so customers can only view their own tickets.
+- Add integration tests that log in and exercise protected endpoints.
+- Add rate limiting to login.
+- Replace compatibility identity fields in shared types once all callers are
+  migrated.
+
+### Debugging Notes
+
+A `401` means the request has no valid session. A `403` means the user is logged
+in but lacks the role required for the route.
+
+If login fails after schema changes, run Prisma generate and reseed the database
+so users have `passwordHash` values.
+
+### Review Checklist
+
+- Is `req.currentUser` used instead of trusting body/query identity fields?
+- Are dashboard and assignment routes protected server-side?
+- Does login avoid returning `passwordHash`?
+- Are frontend route guards treated as UX, not security?
+- Are the remaining auth limitations documented honestly?

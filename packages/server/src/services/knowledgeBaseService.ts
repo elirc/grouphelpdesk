@@ -8,6 +8,8 @@ import { NotFoundError, ValidationError } from '../utils/errors';
 
 const defaultPrisma = new PrismaClient();
 
+type AuthenticatedArticleInput = ArticleInput & { authorId: string };
+
 function tagsFromJson(tags: unknown): string[] {
   if (typeof tags === 'string') {
     try {
@@ -65,7 +67,7 @@ export function createKnowledgeBaseService(prisma = defaultPrisma) {
       return serializeArticle(article);
     },
 
-    async createArticle(input: ArticleInput) {
+    async createArticle(input: AuthenticatedArticleInput) {
       if (!input.title.trim() || !input.body.trim() || !input.category.trim()) {
         throw new ValidationError('Title, body, and category are required.');
       }

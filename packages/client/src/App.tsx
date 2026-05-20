@@ -3,27 +3,40 @@
 
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
+import { AuthProvider } from './auth/AuthProvider';
+import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AppLayout } from './components/layout/AppLayout';
 import CreateTicketPage from './pages/CreateTicketPage';
 import DashboardPage from './pages/DashboardPage';
 import KnowledgeBasePage from './pages/KnowledgeBasePage';
+import LoginPage from './pages/LoginPage';
 import TicketDetailPage from './pages/TicketDetailPage';
 import TicketsPage from './pages/TicketsPage';
 
 const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
   {
     path: '/',
-    element: <AppLayout />,
+    element: <ProtectedRoute />,
     children: [
-      { index: true, element: <DashboardPage /> },
-      { path: 'tickets', element: <TicketsPage /> },
-      { path: 'tickets/new', element: <CreateTicketPage /> },
-      { path: 'tickets/:id', element: <TicketDetailPage /> },
-      { path: 'knowledge-base', element: <KnowledgeBasePage /> },
+      {
+        element: <AppLayout />,
+        children: [
+          { index: true, element: <DashboardPage /> },
+          { path: 'tickets', element: <TicketsPage /> },
+          { path: 'tickets/new', element: <CreateTicketPage /> },
+          { path: 'tickets/:id', element: <TicketDetailPage /> },
+          { path: 'knowledge-base', element: <KnowledgeBasePage /> },
+        ],
+      },
     ],
   },
 ]);
 
 export function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  );
 }

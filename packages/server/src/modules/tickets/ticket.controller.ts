@@ -17,10 +17,13 @@ import type {
   UpdateTicketBody,
 } from './ticket.schema';
 
-export async function createTicket(_req: Request, res: Response, next: NextFunction) {
+export async function createTicket(req: Request, res: Response, next: NextFunction) {
   try {
     const body = getValidatedBody<CreateTicketBody>(res);
-    const ticket = await ticketService.createTicket(body);
+    const ticket = await ticketService.createTicket({
+      ...body,
+      createdBy: req.currentUser!.id,
+    });
     res.status(201).json({ data: ticket });
   } catch (error) {
     next(error);
@@ -45,24 +48,26 @@ export async function getTicket(_req: Request, res: Response, next: NextFunction
   }
 }
 
-export async function updateTicket(_req: Request, res: Response, next: NextFunction) {
+export async function updateTicket(req: Request, res: Response, next: NextFunction) {
   try {
     const params = getValidatedParams<IdParams>(res);
     const body = getValidatedBody<UpdateTicketBody>(res);
-    res.json({ data: await ticketService.updateTicket(params.id, body) });
+    res.json({
+      data: await ticketService.updateTicket(params.id, { ...body, actorId: req.currentUser!.id }),
+    });
   } catch (error) {
     next(error);
   }
 }
 
-export async function assignTicket(_req: Request, res: Response, next: NextFunction) {
+export async function assignTicket(req: Request, res: Response, next: NextFunction) {
   try {
     const params = getValidatedParams<IdParams>(res);
     const body = getValidatedBody<AssignTicketBody>(res);
     const ticket = await ticketService.assignTicket(
       params.id,
       body.assigneeId,
-      body.actorId ?? body.assigneeId,
+      req.currentUser!.id,
     );
     res.json({ data: ticket });
   } catch (error) {

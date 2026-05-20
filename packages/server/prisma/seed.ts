@@ -4,6 +4,8 @@
 import { PrismaClient } from '@prisma/client';
 import { Priority, TicketStatus, UserRole } from '@helpdesk/shared';
 
+import { hashPassword } from '../src/utils/password';
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -13,13 +15,20 @@ async function main() {
   await prisma.ticket.deleteMany();
   await prisma.user.deleteMany();
 
+  const [customerPassword, agentPassword, adminPassword] = await Promise.all([
+    hashPassword('customer123'),
+    hashPassword('agent123'),
+    hashPassword('admin123'),
+  ]);
+
   const [requester, agent, admin] = await Promise.all([
     prisma.user.create({
       data: {
         id: 'user_requester_1',
         name: 'Riley Requester',
         email: 'riley.requester@example.com',
-        role: UserRole.REQUESTER,
+        passwordHash: customerPassword,
+        role: UserRole.CUSTOMER,
         teamId: null,
       },
     }),
@@ -28,6 +37,7 @@ async function main() {
         id: 'user_agent_1',
         name: 'Avery Agent',
         email: 'avery.agent@example.com',
+        passwordHash: agentPassword,
         role: UserRole.AGENT,
         teamId: 'team-it',
       },
@@ -37,6 +47,7 @@ async function main() {
         id: 'user_admin_1',
         name: 'Casey Admin',
         email: 'casey.admin@example.com',
+        passwordHash: adminPassword,
         role: UserRole.ADMIN,
         teamId: 'team-ops',
       },

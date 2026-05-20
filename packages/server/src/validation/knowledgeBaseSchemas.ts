@@ -8,7 +8,7 @@ export const articleBodySchema = z.object({
   body: z.string().trim().min(1, 'body is required'),
   category: z.string().trim().min(1, 'category is required'),
   tags: z.array(z.string().trim().min(1)).optional().default([]),
-  authorId: z.string().trim().min(1, 'authorId is required'),
+  authorId: z.string().trim().min(1).optional(),
 });
 
 export const updateArticleBodySchema = articleBodySchema

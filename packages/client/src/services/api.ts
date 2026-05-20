@@ -9,6 +9,8 @@ import type {
   CreateTicketInput,
   DashboardMetrics,
   KnowledgeBaseArticle,
+  LoginInput,
+  LoginResponse,
   SystemHealth,
   Ticket,
   TicketFilters,
@@ -17,6 +19,10 @@ import type {
 } from '@helpdesk/shared';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+const AUTH_STORAGE_KEY = 'helpdesk.authToken';
+
+let authToken =
+  typeof window === 'undefined' ? null : window.localStorage.getItem(AUTH_STORAGE_KEY);
 
 interface ApiErrorBody {
   error?: {
@@ -55,6 +61,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
       ...init?.headers,
     },
   });
@@ -74,7 +81,34 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+export function setAuthToken(token: string | null) {
+  authToken = token;
+
+  if (typeof window === 'undefined') return;
+
+  if (token) {
+    window.localStorage.setItem(AUTH_STORAGE_KEY, token);
+  } else {
+    window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  }
+}
+
 export const api = {
+  auth: {
+    login(input: LoginInput) {
+      return request<{ data: LoginResponse }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      });
+    },
+    me() {
+      return request<{ data: User }>('/api/auth/me');
+    },
+    async logout() {
+      await request<void>('/api/auth/logout', { method: 'POST' });
+      setAuthToken(null);
+    },
+  },
   tickets: {
     list(filters: TicketFilters = {}) {
       return request<{
@@ -97,7 +131,7 @@ export const api = {
         body: JSON.stringify(input),
       });
     },
-    assign(id: string, assigneeId: string, actorId: string) {
+    assign(id: string, assigneeId: string, actorId?: string) {
       return request<{ data: Ticket }>(`/api/tickets/${id}/assign`, {
         method: 'PATCH',
         body: JSON.stringify({ assigneeId, actorId }),
@@ -109,7 +143,6 @@ export const api = {
       return request<{ data: Comment[] }>(
         `/api/tickets/${ticketId}/comments${buildQuery({
           includeInternal,
-          viewerRole: 'AGENT',
         })}`,
       );
     },

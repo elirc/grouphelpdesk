@@ -38,7 +38,7 @@ export function createCommentService(prisma = defaultPrisma) {
         throw new ValidationError('Comment author must reference an existing user.');
       }
 
-      if (isInternal && author.role === UserRole.REQUESTER) {
+      if (isInternal && [UserRole.CUSTOMER, UserRole.REQUESTER].includes(author.role as UserRole)) {
         throw new ValidationError('Requesters cannot create internal notes.');
       }
 

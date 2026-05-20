@@ -12,7 +12,7 @@ export interface Comment {
 
 export interface CreateCommentInput {
   ticketId: string;
-  authorId: string;
+  authorId?: string;
   body: string;
   isInternal?: boolean;
 }

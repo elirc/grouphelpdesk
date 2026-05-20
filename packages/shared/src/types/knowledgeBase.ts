@@ -17,5 +17,5 @@ export interface ArticleInput {
   body: string;
   category: string;
   tags?: string[];
-  authorId: string;
+  authorId?: string;
 }

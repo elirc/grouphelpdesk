@@ -60,4 +60,11 @@ describe('request validation middleware', () => {
     expect(response.status).toBe(400);
     expect(response.body.error.code).toBe('VALIDATION_ERROR');
   });
+
+  it('requires authentication after a request passes validation', async () => {
+    const response = await request(app).get('/api/tickets?page=1&limit=20');
+
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe('UNAUTHENTICATED');
+  });
 });
