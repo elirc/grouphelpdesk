@@ -1,0 +1,21 @@
+{
+  "name": "helpdesk",
+  "private": true,
+  "workspaces": [
+    "packages/client",
+    "packages/server",
+    "packages/shared"
+  ],
+  "scripts": {
+    "lint": "eslint \"packages/**/*.{ts,tsx}\" --no-error-on-unmatched-pattern",
+    "format": "prettier --write \"**/*.{js,ts,tsx,json,md}\"",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}

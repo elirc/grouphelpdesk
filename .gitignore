@@ -1,14 +1,11 @@
-# OS files
-.DS_Store
-Thumbs.db
-
-# Editor settings
-.vscode/
-.idea/
-
-# Logs
-*.log
-
-# Environment files
+node_modules/
+dist/
+build/
 .env
 .env.*
+*.db
+*.db-journal
+.DS_Store
+coverage/
+.turbo/
+*.tsbuildinfo
