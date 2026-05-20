@@ -77,5 +77,13 @@ export function createTicketRepository(prisma = defaultPrisma): TicketRepository
     deleteTicket(id) {
       return prisma.ticket.delete({ where: { id } });
     },
+
+    createStatusHistory(data) {
+      return prisma.ticketStatusHistory.create({ data });
+    },
+
+    createAssignmentHistory(data) {
+      return prisma.ticketAssignmentHistory.create({ data });
+    },
   };
 }

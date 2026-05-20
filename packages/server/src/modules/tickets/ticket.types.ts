@@ -27,4 +27,8 @@ export interface TicketRepository {
   createTicket(data: Prisma.TicketUncheckedCreateInput): Promise<Ticket>;
   updateTicket(id: string, data: Prisma.TicketUncheckedUpdateInput): Promise<Ticket>;
   deleteTicket(id: string): Promise<Ticket>;
+  createStatusHistory(data: Prisma.TicketStatusHistoryUncheckedCreateInput): Promise<unknown>;
+  createAssignmentHistory(
+    data: Prisma.TicketAssignmentHistoryUncheckedCreateInput,
+  ): Promise<unknown>;
 }

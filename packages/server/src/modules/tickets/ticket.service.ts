@@ -124,11 +124,23 @@ export function createTicketService(
 
       const actorId = input.actorId ?? existing.createdBy;
       if (input.status && input.status !== existing.status) {
+        await repository.createStatusHistory({
+          ticketId: ticket.id,
+          changedBy: actorId,
+          fromStatus: existing.status,
+          toStatus: input.status,
+        });
         await activityLog.logActivity(ticket.id, actorId, ActivityAction.STATUS_CHANGE, {
           from: existing.status,
           to: input.status,
         });
       } else if (input.assigneeId !== undefined && input.assigneeId !== existing.assigneeId) {
+        await repository.createAssignmentHistory({
+          ticketId: ticket.id,
+          changedBy: actorId,
+          fromAssigneeId: existing.assigneeId,
+          toAssigneeId: input.assigneeId,
+        });
         await activityLog.logActivity(ticket.id, actorId, ActivityAction.ASSIGNED, {
           from: existing.assigneeId,
           to: input.assigneeId,

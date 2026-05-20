@@ -408,3 +408,59 @@ Most React Query bugs in CRUD apps are cache-key or invalidation bugs.
 - Do mutations invalidate affected list/detail queries?
 - Is the API client still centralized?
 - Did the phase avoid a giant frontend rewrite?
+
+## 2026-05-20 - Phase 6: Database Modeling Improvements
+
+### Files Changed
+
+- `packages/server/prisma/schema.prisma`
+- `packages/server/prisma/seed.ts`
+- `packages/server/src/modules/tickets/ticket.types.ts`
+- `packages/server/src/modules/tickets/ticket.repository.ts`
+- `packages/server/src/modules/tickets/ticket.service.ts`
+- `docs/learning/database-modeling-guide.md`
+
+### Summary Of Change
+
+Added first-class organization and team models, connected users and tickets to
+teams through Prisma relations, and added ticket status/assignment history
+tables. Ticket status and assignment changes now write structured history rows in
+addition to the existing activity log.
+
+### Reason For Change
+
+The original schema used simple string fields for team membership and a generic
+activity log for all audit behavior. That was good for early scaffolding but
+missed important relational modeling lessons.
+
+### What Skill This Teaches
+
+This phase teaches one-to-many relationships, foreign keys, seed ordering,
+history/audit modeling, and when a concept should graduate from a string field
+to a table.
+
+### Tradeoffs
+
+The schema is more realistic, but it is not fully normalized yet. Tags are still
+serialized strings, and the API does not yet expose organization/team management
+endpoints.
+
+### Future Improvement Ideas
+
+- Normalize tags with a join table.
+- Add organization scoping to all ticket queries.
+- Add tests for history row creation.
+- Add real Prisma migrations for production-style change management.
+
+### Debugging Notes
+
+Foreign-key failures usually mean seed order or missing related records. Missing
+history rows usually mean the service path did not call the repository history
+method.
+
+### Review Checklist
+
+- Do relations preserve existing core behavior?
+- Are history writes inside the service layer?
+- Does seed data create parent records first?
+- Are schema tradeoffs documented honestly?

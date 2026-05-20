@@ -10,10 +10,39 @@ const prisma = new PrismaClient();
 
 async function main() {
   await prisma.activityLog.deleteMany();
+  await prisma.ticketAssignmentHistory.deleteMany();
+  await prisma.ticketStatusHistory.deleteMany();
   await prisma.comment.deleteMany();
   await prisma.article.deleteMany();
   await prisma.ticket.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.team.deleteMany();
+  await prisma.organization.deleteMany();
+
+  const organization = await prisma.organization.create({
+    data: {
+      id: 'org_helpdesk_demo',
+      name: 'HelpDesk Demo Co',
+      slug: 'helpdesk-demo',
+    },
+  });
+
+  await prisma.team.createMany({
+    data: [
+      {
+        id: 'team-it',
+        name: 'IT Support',
+        slug: 'it-support',
+        organizationId: organization.id,
+      },
+      {
+        id: 'team-ops',
+        name: 'Operations Support',
+        slug: 'operations-support',
+        organizationId: organization.id,
+      },
+    ],
+  });
 
   const [customerPassword, agentPassword, adminPassword] = await Promise.all([
     hashPassword('customer123'),
