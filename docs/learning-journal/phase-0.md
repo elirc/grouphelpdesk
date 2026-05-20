@@ -1,3 +1,5 @@
+<!-- Author: Morgan Lee | Issue: #11 -->
+
 # Phase 0: Planning, Architecture, and Repo Scaffolding
 
 ## What Was Accomplished

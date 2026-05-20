@@ -1,6 +1,8 @@
 {
   "name": "@helpdesk/client",
   "private": true,
+  "authorPersona": "Sam Rivera",
+  "issue": "#6",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -9,6 +11,7 @@
   },
   "dependencies": {
     "@helpdesk/shared": "*",
+    "marked": "^14.1.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",

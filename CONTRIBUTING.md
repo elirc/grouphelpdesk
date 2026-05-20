@@ -1,3 +1,5 @@
+<!-- Author: Morgan Lee | Issue: #11 -->
+
 # Contributing to HelpDesk
 
 HelpDesk is a learning project, but the collaboration model should feel like a

@@ -1,3 +1,6 @@
+// Author: Morgan Lee
+// Issue: #9 - Configure shared TypeScript
+
 {
   "compilerOptions": {
     "target": "ES2020",

@@ -1,0 +1,101 @@
+// Author: Alex Chen
+// Issue: #1 â€” Define HelpDesk database schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String        @id @default(uuid())
+  name            String
+  email           String        @unique
+  role            String
+  teamId          String?
+  createdTickets  Ticket[]      @relation("TicketCreator")
+  assignedTickets Ticket[]      @relation("TicketAssignee")
+  comments        Comment[]
+  articles        Article[]
+  activityLogs    ActivityLog[]
+
+  @@index([role])
+  @@index([teamId])
+}
+
+model Ticket {
+  id          String        @id @default(uuid())
+  title       String
+  description String
+  status      String        @default("OPEN")
+  priority    String
+  createdBy   String
+  assigneeId  String?
+  teamId      String?
+  tags        String        @default("[]")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  resolvedAt  DateTime?
+  closedAt    DateTime?
+  creator     User          @relation("TicketCreator", fields: [createdBy], references: [id])
+  assignee    User?         @relation("TicketAssignee", fields: [assigneeId], references: [id])
+  comments    Comment[]
+  activity    ActivityLog[]
+
+  @@index([status])
+  @@index([priority])
+  @@index([assigneeId])
+  @@index([createdBy])
+  @@index([teamId])
+  @@index([createdAt])
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  ticketId   String
+  authorId   String
+  body       String
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author     User     @relation(fields: [authorId], references: [id])
+
+  @@index([ticketId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model Article {
+  id        String   @id @default(uuid())
+  title     String
+  body      String
+  category  String
+  tags      String   @default("[]")
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author    User     @relation(fields: [authorId], references: [id])
+
+  @@index([category])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model ActivityLog {
+  id        String         @id @default(uuid())
+  ticketId  String
+  userId    String
+  action    String
+  details   String
+  createdAt DateTime       @default(now())
+  ticket    Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id])
+
+  @@index([ticketId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}

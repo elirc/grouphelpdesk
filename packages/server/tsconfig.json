@@ -1,3 +1,6 @@
+// Author: Alex Chen
+// Issue: #1 - Configure server TypeScript
+
 {
   "compilerOptions": {
     "target": "ES2020",

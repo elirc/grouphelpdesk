@@ -1,3 +1,5 @@
+<!-- Author: Morgan Lee | Issue: #11 -->
+
 # ADR-001: Monorepo with npm Workspaces
 
 ## Status

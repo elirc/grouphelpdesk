@@ -1,444 +1,168 @@
+<!-- Author: Morgan Lee | Issue: #42 -->
+
 # API Design
 
-The HelpDesk API is a RESTful JSON API served under `/api`. This document defines
-the conventions and the first resource contract the team will implement:
-Tickets.
+The HelpDesk API is a RESTful JSON API under `/api`.
 
-## Base URL
+## Conventions
 
-```text
-/api
-```
-
-All endpoints in this document are relative to that base path.
-
-## General Conventions
-
-### Request and Response Format
-
-Requests with bodies use JSON. Responses return JSON unless the endpoint has no
-body.
-
-Clients should send:
-
-```http
-Content-Type: application/json
-Accept: application/json
-```
-
-### Status Codes
-
-| Status | Meaning                                           |
-| ------ | ------------------------------------------------- |
-| `200`  | Request succeeded                                 |
-| `201`  | Resource was created                              |
-| `400`  | Request is malformed                              |
-| `404`  | Resource was not found                            |
-| `422`  | Request is valid JSON but fails domain validation |
-| `500`  | Unexpected server error                           |
-
-### Error Shape
-
-All errors should use this shape:
-
-```ts
-interface ErrorResponse {
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
-}
-```
-
-Example:
+Responses use JSON. Errors use:
 
 ```json
 {
   "error": {
-    "code": "TICKET_NOT_FOUND",
-    "message": "Ticket could not be found."
+    "code": "VALIDATION_ERROR",
+    "message": "Ticket title is required.",
+    "details": {}
   }
 }
 ```
 
-### Pagination
-
-List endpoints use `page` and `limit` query parameters:
+Paginated endpoints use:
 
 ```text
 ?page=1&limit=20
 ```
 
-Paginated responses use this shape:
-
-```ts
-interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-```
-
-## Shared Ticket Types
-
-These TypeScript-style shapes describe the API contract. The exact shared types
-will live in `@helpdesk/shared` once application code begins.
-
-```ts
-type TicketStatus = 'OPEN' | 'IN_PROGRESS' | 'WAITING' | 'RESOLVED' | 'CLOSED';
-
-type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
-
-interface Ticket {
-  id: string;
-  title: string;
-  description: string;
-  status: TicketStatus;
-  priority: TicketPriority;
-  requesterId: string;
-  assigneeId?: string | null;
-  teamId?: string | null;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  resolvedAt?: string | null;
-  closedAt?: string | null;
-}
-```
-
-## Tickets Resource
-
-### Create a Ticket
-
-```text
-POST /api/tickets
-```
-
-Creates a new support ticket. New tickets default to `OPEN` unless a later phase
-introduces workflow-specific creation rules.
-
-Request body:
-
-```ts
-interface CreateTicketRequest {
-  title: string;
-  description: string;
-  priority: TicketPriority;
-  requesterId: string;
-  teamId?: string;
-  tags?: string[];
-}
-```
-
-Success response:
-
-```text
-201 Created
-```
-
-```ts
-interface CreateTicketResponse {
-  data: Ticket;
-}
-```
-
-Error cases:
-
-| Status | Code                    | Reason                                 |
-| ------ | ----------------------- | -------------------------------------- |
-| `400`  | `INVALID_JSON`          | Request body is not valid JSON         |
-| `422`  | `VALIDATION_ERROR`      | Required fields are missing or invalid |
-| `500`  | `INTERNAL_SERVER_ERROR` | Unexpected server failure              |
-
-Example request:
+and respond with:
 
 ```json
 {
-  "title": "Cannot access payroll dashboard",
-  "description": "The payroll dashboard shows a blank page after login.",
+  "data": [],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 0,
+    "totalPages": 0
+  }
+}
+```
+
+## Tickets
+
+### `POST /api/tickets`
+
+Creates a ticket.
+
+```json
+{
+  "title": "Cannot access payroll",
+  "description": "The dashboard is blank.",
   "priority": "HIGH",
-  "requesterId": "user_123",
-  "teamId": "team_it",
+  "createdBy": "user_requester_1",
   "tags": ["payroll", "access"]
 }
 ```
 
-Example response:
+Returns `201` with `{ "data": Ticket }`.
+
+### `GET /api/tickets`
+
+Lists tickets. Supports `page`, `limit`, `status`, `priority`, `assigneeId`, and
+`search`.
+
+```text
+GET /api/tickets?status=OPEN&priority=HIGH&search=payroll
+```
+
+### `GET /api/tickets/:id`
+
+Returns one ticket.
+
+### `PATCH /api/tickets/:id`
+
+Updates title, description, status, priority, assignee, team, or tags. Status
+updates are validated by the state machine.
+
+### `PATCH /api/tickets/:id/assign`
+
+Assigns a ticket to an agent or admin.
 
 ```json
 {
-  "data": {
-    "id": "ticket_001",
-    "title": "Cannot access payroll dashboard",
-    "description": "The payroll dashboard shows a blank page after login.",
-    "status": "OPEN",
-    "priority": "HIGH",
-    "requesterId": "user_123",
-    "assigneeId": null,
-    "teamId": "team_it",
-    "tags": ["payroll", "access"],
-    "createdAt": "2026-05-20T14:30:00.000Z",
-    "updatedAt": "2026-05-20T14:30:00.000Z",
-    "resolvedAt": null,
-    "closedAt": null
-  }
+  "assigneeId": "user_agent_1",
+  "actorId": "user_agent_1"
 }
 ```
 
-### List Tickets
+### `DELETE /api/tickets/:id`
 
-```text
-GET /api/tickets
-```
+Deletes a ticket and returns `{ "data": { "id": "...", "deleted": true } }`.
 
-Returns a paginated list of tickets. Filters are optional and can be combined.
+## Comments
 
-Query parameters:
-
-```ts
-interface ListTicketsQuery {
-  page?: number;
-  limit?: number;
-  status?: TicketStatus;
-  priority?: TicketPriority;
-  assigneeId?: string;
-  requesterId?: string;
-  teamId?: string;
-  tag?: string;
-  search?: string;
-}
-```
-
-Success response:
-
-```text
-200 OK
-```
-
-```ts
-type ListTicketsResponse = PaginatedResponse<Ticket>;
-```
-
-Error cases:
-
-| Status | Code                    | Reason                                       |
-| ------ | ----------------------- | -------------------------------------------- |
-| `400`  | `INVALID_QUERY`         | Query parameter has an invalid type or value |
-| `422`  | `VALIDATION_ERROR`      | Filter combination is not allowed            |
-| `500`  | `INTERNAL_SERVER_ERROR` | Unexpected server failure                    |
-
-Example request:
-
-```text
-GET /api/tickets?page=1&limit=20&status=OPEN&priority=HIGH
-```
-
-Example response:
+### `POST /api/tickets/:ticketId/comments`
 
 ```json
 {
-  "data": [
-    {
-      "id": "ticket_001",
-      "title": "Cannot access payroll dashboard",
-      "description": "The payroll dashboard shows a blank page after login.",
-      "status": "OPEN",
-      "priority": "HIGH",
-      "requesterId": "user_123",
-      "assigneeId": null,
-      "teamId": "team_it",
-      "tags": ["payroll", "access"],
-      "createdAt": "2026-05-20T14:30:00.000Z",
-      "updatedAt": "2026-05-20T14:30:00.000Z",
-      "resolvedAt": null,
-      "closedAt": null
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 20,
-    "total": 1,
-    "totalPages": 1
-  }
+  "authorId": "user_agent_1",
+  "body": "I am checking the VPN profile.",
+  "isInternal": true
 }
 ```
 
-### Get a Single Ticket
+### `GET /api/tickets/:ticketId/comments`
 
-```text
-GET /api/tickets/:id
-```
+Supports `includeInternal=true` and `viewerRole=AGENT`. Requesters never receive
+internal notes.
 
-Returns one ticket by ID.
+## Users
 
-Path parameters:
+### `GET /api/users`
 
-```ts
-interface GetTicketParams {
-  id: string;
+Lists users. Supports `role=AGENT`.
+
+## Dashboard
+
+### `GET /api/dashboard/metrics`
+
+Returns open count, in-progress count, average resolution hours, tickets by
+priority, and tickets by category.
+
+### `GET /api/dashboard/activity`
+
+Returns the 20 most recent activity log entries with ticket and user data.
+
+### `GET /api/dashboard/agent-workload`
+
+Returns active ticket counts per agent.
+
+### `GET /api/dashboard/system`
+
+Returns uptime, request count, average response time, and recent slow requests.
+
+## Knowledge Base
+
+### `POST /api/articles`
+
+Creates an article.
+
+### `GET /api/articles`
+
+Lists articles. Supports `search`.
+
+### `GET /api/articles/:id`
+
+Returns one article.
+
+### `PATCH /api/articles/:id`
+
+Updates an article.
+
+### `DELETE /api/articles/:id`
+
+Deletes an article.
+
+## Health
+
+### `GET /health`
+
+Returns service health:
+
+```json
+{
+  "status": "ok",
+  "uptime": 12.4,
+  "timestamp": "2026-05-20T12:00:00.000Z"
 }
-```
-
-Success response:
-
-```text
-200 OK
-```
-
-```ts
-interface GetTicketResponse {
-  data: Ticket;
-}
-```
-
-Error cases:
-
-| Status | Code                    | Reason                            |
-| ------ | ----------------------- | --------------------------------- |
-| `404`  | `TICKET_NOT_FOUND`      | No ticket exists for the given ID |
-| `500`  | `INTERNAL_SERVER_ERROR` | Unexpected server failure         |
-
-### Update a Ticket
-
-```text
-PATCH /api/tickets/:id
-```
-
-Updates editable ticket fields. Status changes must follow the allowed workflow:
-`OPEN -> IN_PROGRESS -> WAITING -> RESOLVED -> CLOSED`.
-
-Path parameters:
-
-```ts
-interface UpdateTicketParams {
-  id: string;
-}
-```
-
-Request body:
-
-```ts
-interface UpdateTicketRequest {
-  title?: string;
-  description?: string;
-  status?: TicketStatus;
-  priority?: TicketPriority;
-  assigneeId?: string | null;
-  teamId?: string | null;
-  tags?: string[];
-}
-```
-
-Success response:
-
-```text
-200 OK
-```
-
-```ts
-interface UpdateTicketResponse {
-  data: Ticket;
-}
-```
-
-Error cases:
-
-| Status | Code                    | Reason                                      |
-| ------ | ----------------------- | ------------------------------------------- |
-| `400`  | `INVALID_JSON`          | Request body is not valid JSON              |
-| `404`  | `TICKET_NOT_FOUND`      | No ticket exists for the given ID           |
-| `422`  | `VALIDATION_ERROR`      | Field value or status transition is invalid |
-| `500`  | `INTERNAL_SERVER_ERROR` | Unexpected server failure                   |
-
-### Delete a Ticket
-
-```text
-DELETE /api/tickets/:id
-```
-
-Deletes a ticket. Early phases may implement hard deletion for simplicity. Later
-phases can revisit soft deletion if audit requirements become more important.
-
-Path parameters:
-
-```ts
-interface DeleteTicketParams {
-  id: string;
-}
-```
-
-Success response:
-
-```text
-200 OK
-```
-
-```ts
-interface DeleteTicketResponse {
-  data: {
-    id: string;
-    deleted: true;
-  };
-}
-```
-
-Error cases:
-
-| Status | Code                    | Reason                            |
-| ------ | ----------------------- | --------------------------------- |
-| `404`  | `TICKET_NOT_FOUND`      | No ticket exists for the given ID |
-| `500`  | `INTERNAL_SERVER_ERROR` | Unexpected server failure         |
-
-## Future Endpoints
-
-These endpoints are planned for later phases. They are listed here to show the
-direction of the API without committing to full request and response contracts
-too early.
-
-### Comments
-
-```text
-POST   /api/tickets/:ticketId/comments
-GET    /api/tickets/:ticketId/comments
-PATCH  /api/comments/:id
-DELETE /api/comments/:id
-```
-
-### Assignment
-
-```text
-PATCH /api/tickets/:id/assign
-PATCH /api/tickets/:id/team
-```
-
-### Dashboard
-
-```text
-GET /api/dashboard/summary
-GET /api/dashboard/tickets-by-category
-GET /api/dashboard/agent-workload
-```
-
-### Knowledge Base
-
-```text
-POST   /api/articles
-GET    /api/articles
-GET    /api/articles/:id
-PATCH  /api/articles/:id
-DELETE /api/articles/:id
-```
-
-### Users and Teams
-
-```text
-GET /api/users
-GET /api/users/:id
-GET /api/teams
-GET /api/teams/:id
 ```

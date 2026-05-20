@@ -1,3 +1,6 @@
+// Author: Morgan Lee
+// Issue: #10 - Configure shared linting rules
+
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',

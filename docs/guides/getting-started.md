@@ -1,63 +1,86 @@
+<!-- Author: Jordan Park | Issue: #30 -->
+
 # Getting Started
 
-This guide explains how to set up the HelpDesk repository during Phase 0. At
-this stage, the repository contains structure, configuration, and documentation
-only. Application code arrives in Phase 1.
+HelpDesk can run either directly on your machine or through Docker.
 
 ## Prerequisites
 
-Install:
-
 - Node.js 20+
 - npm 9+
+- Docker Desktop for container-based setup
 - Git
 
-Check your versions:
+## Quick Start with Docker
+
+From the repository root:
 
 ```bash
-node --version
-npm --version
-git --version
+docker compose -f docker/docker-compose.yml up --build
 ```
 
-## Clone the Repository
+The client is available at `http://localhost:3000`. The API is available at
+`http://localhost:3001`.
 
-```bash
-git clone https://github.com/elirc/grouphelpdesk.git
-cd grouphelpdesk
-```
+## Development Setup
 
-## Install Dependencies
-
-Run installation from the repository root:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-The root `package.json` manages npm workspaces for the client, server, and shared
-packages. Installing from the root keeps the workspace dependency tree together.
-
-## Validate the Phase 0 Setup
-
-After dependencies are installed, these commands should be available:
+Create a local `.env` file for the server:
 
 ```bash
-npm run format
-npm run lint
-npm run typecheck
+DATABASE_URL="file:./dev.db"
+PORT=3001
+LOG_LEVEL=info
 ```
 
-Because Phase 0 does not include application source code yet, these commands are
-mostly validating the workspace and tooling setup.
+Generate Prisma client code:
 
-## Git Persona Setup
+```bash
+npm run db:generate --workspace @helpdesk/server
+```
 
-The project simulates multiple senior engineers working together. To practice
-that workflow, read [git-workflow.md](./git-workflow.md) and set up optional Git
-persona aliases for Alex, Sam, Jordan, and Morgan.
+Create and seed the SQLite database:
 
-## What Comes Later
+```bash
+npm run db:push --workspace @helpdesk/server
+npm run db:seed --workspace @helpdesk/server
+```
 
-This guide will expand in later phases when Docker, the Express API, the React
-client, Prisma schema, tests, and local development services are added.
+Run the server:
+
+```bash
+npm run dev --workspace @helpdesk/server
+```
+
+Run the client in another terminal:
+
+```bash
+npm run dev --workspace @helpdesk/client
+```
+
+## Logs
+
+The API writes structured JSON logs through Pino. For easier local reading:
+
+```bash
+npm run dev --workspace @helpdesk/server | npx pino-pretty
+```
+
+## Validation
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+```
+
+## CI
+
+GitHub Actions runs lint, type-check, Prisma generation, and tests on pull
+requests and pushes to `main`. A lighter lint-only workflow provides fast PR
+feedback.

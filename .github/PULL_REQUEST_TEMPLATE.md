@@ -1,3 +1,5 @@
+<!-- Author: Morgan Lee | Issue: #11 -->
+
 ## What Changed
 
 <!-- Brief description of the changes -->

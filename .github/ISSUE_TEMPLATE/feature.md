@@ -4,6 +4,8 @@ about: A new feature or enhancement
 labels: feature
 ---
 
+<!-- Author: Morgan Lee | Issue: #11 -->
+
 ## Description
 
 <!-- What is this feature and why do we need it? -->

@@ -1,3 +1,5 @@
+<!-- Author: Morgan Lee | Issue: #11 -->
+
 # Git Workflow Guide
 
 This guide explains how the HelpDesk team uses Git during normal feature work.

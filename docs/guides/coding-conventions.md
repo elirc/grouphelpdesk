@@ -1,3 +1,5 @@
+<!-- Author: Morgan Lee | Issue: #11 -->
+
 # Coding Conventions
 
 These conventions keep the HelpDesk codebase predictable as multiple personas

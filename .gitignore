@@ -1,3 +1,6 @@
+# Author: Jordan Park
+# Issue: #23 - Ignore local build and runtime artifacts
+
 node_modules/
 dist/
 build/
@@ -5,6 +8,8 @@ build/
 .env.*
 *.db
 *.db-journal
+prisma/*.db
+packages/server/prisma/*.db
 .DS_Store
 coverage/
 .turbo/

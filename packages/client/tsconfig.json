@@ -1,3 +1,6 @@
+// Author: Sam Rivera
+// Issue: #6 - Configure client TypeScript
+
 {
   "compilerOptions": {
     "target": "ES2020",

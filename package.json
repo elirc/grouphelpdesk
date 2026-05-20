@@ -1,6 +1,8 @@
 {
   "name": "helpdesk",
   "private": true,
+  "authorPersona": "Morgan Lee",
+  "issue": "#42",
   "workspaces": [
     "packages/client",
     "packages/server",
@@ -9,7 +11,8 @@
   "scripts": {
     "lint": "eslint \"packages/**/*.{ts,tsx}\" --no-error-on-unmatched-pattern",
     "format": "prettier --write \"**/*.{js,ts,tsx,json,md}\"",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "test": "npm run test --workspace @helpdesk/server",
+    "typecheck": "npm run build --workspace @helpdesk/shared && npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^7.18.0",

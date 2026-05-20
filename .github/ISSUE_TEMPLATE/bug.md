@@ -4,6 +4,8 @@ about: Something isn't working correctly
 labels: bug
 ---
 
+<!-- Author: Morgan Lee | Issue: #11 -->
+
 ## Description
 
 <!-- What's happening vs. what should happen? -->

@@ -1,6 +1,8 @@
 {
   "name": "@helpdesk/shared",
   "private": true,
+  "authorPersona": "Morgan Lee",
+  "issue": "#9",
   "main": "src/index.ts",
   "scripts": {
     "build": "node -e \"const fs=require('fs');const hasTs=fs.readdirSync('src',{recursive:true}).some((f)=>/\\.ts$/.test(String(f)));process.exit(hasTs?1:0)\" || tsc",
