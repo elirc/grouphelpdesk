@@ -515,3 +515,52 @@ an integration test returns `400`, check validation first; if it returns `401` o
 - Are auth failures covered?
 - Are side effects like history writes covered?
 - Does the documentation explain what not to over-test?
+
+## 2026-05-20 - Phase 8: Debugging And Code Review Documentation
+
+### Files Changed
+
+- `docs/learning/debugging-playbook.md`
+- `docs/learning/code-review-guide.md`
+- `docs/learning/senior-engineering-decisions.md`
+- `docs/learning/refactoring-retrospective.md`
+- `docs/learning/refactoring-journal.md`
+
+### Summary Of Change
+
+Added the final learning documentation layer: debugging guidance, code review
+guidance, senior decision tradeoffs, and a retrospective.
+
+### Reason For Change
+
+The repo is meant to teach realistic software engineering, not only produce a
+working app. Debugging, reviewing, and tradeoff explanation are core mid-level
+skills.
+
+### What Skill This Teaches
+
+This phase teaches how to trace bugs, review PRs, explain decisions, and name
+technical debt honestly.
+
+### Tradeoffs
+
+No runtime behavior changed in this phase. The value is learning leverage and
+future maintainability.
+
+### Future Improvement Ideas
+
+- Add screenshots or diagrams to the debugging guide.
+- Add example PR reviews against real commits.
+- Convert the retrospective into GitHub issues for the next learning cycle.
+
+### Debugging Notes
+
+Use the debugging playbook before editing code. The fastest fix usually starts
+with finding the failing layer.
+
+### Review Checklist
+
+- Are the docs practical and repo-specific?
+- Do they name common mistakes?
+- Do they include debugging and review guidance?
+- Do they honestly describe remaining debt?
