@@ -4,8 +4,21 @@
 import { Router } from 'express';
 
 import { createComment, listComments } from '../controllers/commentController';
+import { validateBody, validateParams, validateQuery } from '../middleware/validateRequest';
+import { ticketIdParamsSchema } from '../validation/commonSchemas';
+import { createCommentBodySchema, listCommentsQuerySchema } from '../validation/commentSchemas';
 
 export const commentRouter = Router({ mergeParams: true });
 
-commentRouter.post('/', createComment);
-commentRouter.get('/', listComments);
+commentRouter.post(
+  '/',
+  validateParams(ticketIdParamsSchema),
+  validateBody(createCommentBodySchema),
+  createComment,
+);
+commentRouter.get(
+  '/',
+  validateParams(ticketIdParamsSchema),
+  validateQuery(listCommentsQuerySchema),
+  listComments,
+);

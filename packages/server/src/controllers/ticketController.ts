@@ -2,37 +2,25 @@
 // Issue: #4 â€” Map ticket HTTP requests to service operations
 
 import type { NextFunction, Request, Response } from 'express';
-import { Priority } from '@helpdesk/shared';
-import type { TicketStatus } from '@helpdesk/shared';
 
+import {
+  getValidatedBody,
+  getValidatedParams,
+  getValidatedQuery,
+} from '../middleware/validateRequest';
 import { ticketService } from '../services/ticketService';
-import { ValidationError } from '../utils/errors';
+import type { IdParams } from '../validation/commonSchemas';
+import type {
+  AssignTicketBody,
+  CreateTicketBody,
+  ListTicketsQuery,
+  UpdateTicketBody,
+} from '../validation/ticketSchemas';
 
-function parseEnum<T extends Record<string, string>>(enumObject: T, value: unknown, field: string) {
-  if (typeof value !== 'string' || !Object.values(enumObject).includes(value)) {
-    throw new ValidationError(`${field} is invalid.`);
-  }
-
-  return value as T[keyof T];
-}
-
-function splitQuery(value: unknown): string[] | undefined {
-  if (!value) return undefined;
-  if (Array.isArray(value)) return value.flatMap((item) => String(item).split(','));
-  return String(value).split(',');
-}
-
-export async function createTicket(req: Request, res: Response, next: NextFunction) {
+export async function createTicket(_req: Request, res: Response, next: NextFunction) {
   try {
-    const ticket = await ticketService.createTicket({
-      title: req.body.title,
-      description: req.body.description,
-      priority: parseEnum(Priority, req.body.priority, 'priority') as Priority,
-      createdBy: req.body.createdBy,
-      assigneeId: req.body.assigneeId ?? null,
-      teamId: req.body.teamId ?? null,
-      tags: Array.isArray(req.body.tags) ? req.body.tags : [],
-    });
+    const body = getValidatedBody<CreateTicketBody>(res);
+    const ticket = await ticketService.createTicket(body);
 
     res.status(201).json({ data: ticket });
   } catch (error) {
@@ -40,19 +28,10 @@ export async function createTicket(req: Request, res: Response, next: NextFuncti
   }
 }
 
-export async function listTickets(req: Request, res: Response, next: NextFunction) {
+export async function listTickets(_req: Request, res: Response, next: NextFunction) {
   try {
-    const status = splitQuery(req.query.status) as TicketStatus[] | undefined;
-    const priority = splitQuery(req.query.priority) as Priority[] | undefined;
-
-    const result = await ticketService.getTickets({
-      page: Number(req.query.page ?? 1),
-      limit: Number(req.query.limit ?? 20),
-      status,
-      priority,
-      assigneeId: req.query.assigneeId?.toString(),
-      search: req.query.search?.toString(),
-    });
+    const query = getValidatedQuery<ListTicketsQuery>(res);
+    const result = await ticketService.getTickets(query);
 
     res.json(result);
   } catch (error) {
@@ -60,30 +39,35 @@ export async function listTickets(req: Request, res: Response, next: NextFunctio
   }
 }
 
-export async function getTicket(req: Request, res: Response, next: NextFunction) {
+export async function getTicket(_req: Request, res: Response, next: NextFunction) {
   try {
-    const ticket = await ticketService.getTicketById(req.params.id);
+    const params = getValidatedParams<IdParams>(res);
+    const ticket = await ticketService.getTicketById(params.id);
     res.json({ data: ticket });
   } catch (error) {
     next(error);
   }
 }
 
-export async function updateTicket(req: Request, res: Response, next: NextFunction) {
+export async function updateTicket(_req: Request, res: Response, next: NextFunction) {
   try {
-    const ticket = await ticketService.updateTicket(req.params.id, req.body);
+    const params = getValidatedParams<IdParams>(res);
+    const body = getValidatedBody<UpdateTicketBody>(res);
+    const ticket = await ticketService.updateTicket(params.id, body);
     res.json({ data: ticket });
   } catch (error) {
     next(error);
   }
 }
 
-export async function assignTicket(req: Request, res: Response, next: NextFunction) {
+export async function assignTicket(_req: Request, res: Response, next: NextFunction) {
   try {
+    const params = getValidatedParams<IdParams>(res);
+    const body = getValidatedBody<AssignTicketBody>(res);
     const ticket = await ticketService.assignTicket(
-      req.params.id,
-      req.body.assigneeId,
-      req.body.actorId ?? req.body.assigneeId,
+      params.id,
+      body.assigneeId,
+      body.actorId ?? body.assigneeId,
     );
     res.json({ data: ticket });
   } catch (error) {
@@ -91,9 +75,10 @@ export async function assignTicket(req: Request, res: Response, next: NextFuncti
   }
 }
 
-export async function deleteTicket(req: Request, res: Response, next: NextFunction) {
+export async function deleteTicket(_req: Request, res: Response, next: NextFunction) {
   try {
-    const result = await ticketService.deleteTicket(req.params.id);
+    const params = getValidatedParams<IdParams>(res);
+    const result = await ticketService.deleteTicket(params.id);
     res.json(result);
   } catch (error) {
     next(error);

@@ -1,36 +1,59 @@
 // Author: Morgan Lee
-// Issue: #10 â€” Provide lightweight request validation helpers
+// Issue: Learning Phase 2 - Validate untrusted HTTP input with Zod
 
-import { ValidationError } from '../utils/errors';
+import type { NextFunction, Request, Response } from 'express';
+import type { ZodError, ZodTypeAny } from 'zod';
 
-export function requireString(value: unknown, fieldName: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new ValidationError(`${fieldName} is required.`);
-  }
+import { AppError } from '../utils/errors';
 
-  return value.trim();
+type RequestPart = 'body' | 'query' | 'params';
+
+function formatZodError(error: ZodError) {
+  return error.issues.map((issue) => ({
+    path: issue.path.join('.') || '(root)',
+    message: issue.message,
+    code: issue.code,
+  }));
 }
 
-export function optionalString(value: unknown, fieldName: string): string | undefined {
-  if (value === undefined || value === null || value === '') {
-    return undefined;
-  }
+function validate(part: RequestPart, schema: ZodTypeAny) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const result = schema.safeParse(req[part]);
 
-  if (typeof value !== 'string') {
-    throw new ValidationError(`${fieldName} must be a string.`);
-  }
+    if (!result.success) {
+      next(
+        new AppError(400, 'VALIDATION_ERROR', `Invalid request ${part}.`, {
+          issues: formatZodError(result.error),
+        }),
+      );
+      return;
+    }
 
-  return value.trim();
+    res.locals[`validated${part[0].toUpperCase()}${part.slice(1)}`] = result.data;
+    next();
+  };
 }
 
-export function stringArray(value: unknown, fieldName: string): string[] {
-  if (value === undefined || value === null) {
-    return [];
-  }
+export function validateBody(schema: ZodTypeAny) {
+  return validate('body', schema);
+}
 
-  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
-    throw new ValidationError(`${fieldName} must be an array of strings.`);
-  }
+export function validateQuery(schema: ZodTypeAny) {
+  return validate('query', schema);
+}
 
-  return value.map((item) => item.trim()).filter(Boolean);
+export function validateParams(schema: ZodTypeAny) {
+  return validate('params', schema);
+}
+
+export function getValidatedBody<T>(res: Response): T {
+  return res.locals.validatedBody as T;
+}
+
+export function getValidatedQuery<T>(res: Response): T {
+  return res.locals.validatedQuery as T;
+}
+
+export function getValidatedParams<T>(res: Response): T {
+  return res.locals.validatedParams as T;
 }

@@ -4,7 +4,9 @@
 import { Router } from 'express';
 
 import { listUsers } from '../controllers/userController';
+import { validateQuery } from '../middleware/validateRequest';
+import { listUsersQuerySchema } from '../validation/userSchemas';
 
 export const userRouter = Router();
 
-userRouter.get('/', listUsers);
+userRouter.get('/', validateQuery(listUsersQuerySchema), listUsers);

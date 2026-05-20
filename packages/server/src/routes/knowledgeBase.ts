@@ -10,11 +10,19 @@ import {
   listArticles,
   updateArticle,
 } from '../controllers/knowledgeBaseController';
+import { validateBody, validateParams, validateQuery } from '../middleware/validateRequest';
+import { idParamsSchema, optionalSearchQuerySchema } from '../validation/commonSchemas';
+import { articleBodySchema, updateArticleBodySchema } from '../validation/knowledgeBaseSchemas';
 
 export const knowledgeBaseRouter = Router();
 
-knowledgeBaseRouter.post('/', createArticle);
-knowledgeBaseRouter.get('/', listArticles);
-knowledgeBaseRouter.get('/:id', getArticle);
-knowledgeBaseRouter.patch('/:id', updateArticle);
-knowledgeBaseRouter.delete('/:id', deleteArticle);
+knowledgeBaseRouter.post('/', validateBody(articleBodySchema), createArticle);
+knowledgeBaseRouter.get('/', validateQuery(optionalSearchQuerySchema), listArticles);
+knowledgeBaseRouter.get('/:id', validateParams(idParamsSchema), getArticle);
+knowledgeBaseRouter.patch(
+  '/:id',
+  validateParams(idParamsSchema),
+  validateBody(updateArticleBodySchema),
+  updateArticle,
+);
+knowledgeBaseRouter.delete('/:id', validateParams(idParamsSchema), deleteArticle);

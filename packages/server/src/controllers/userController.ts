@@ -2,14 +2,15 @@
 // Issue: #14 â€” Expose user lookup endpoints for assignment UI
 
 import type { NextFunction, Request, Response } from 'express';
-import type { UserRole } from '@helpdesk/shared';
 
+import { getValidatedQuery } from '../middleware/validateRequest';
 import { userService } from '../services/userService';
+import type { ListUsersQuery } from '../validation/userSchemas';
 
-export async function listUsers(req: Request, res: Response, next: NextFunction) {
+export async function listUsers(_req: Request, res: Response, next: NextFunction) {
   try {
-    const role = req.query.role?.toString() as UserRole | undefined;
-    const users = await userService.getUsers(role);
+    const query = getValidatedQuery<ListUsersQuery>(res);
+    const users = await userService.getUsers(query.role);
     res.json({ data: users });
   } catch (error) {
     next(error);
