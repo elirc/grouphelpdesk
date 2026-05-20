@@ -464,3 +464,54 @@ method.
 - Are history writes inside the service layer?
 - Does seed data create parent records first?
 - Are schema tradeoffs documented honestly?
+
+## 2026-05-20 - Phase 7: Testing Expansion
+
+### Files Changed
+
+- `tests/unit/ticketService.test.ts`
+- `tests/integration/authz.test.ts`
+- `docs/learning/testing-strategy-guide.md`
+- `docs/learning/refactoring-journal.md`
+
+### Summary Of Change
+
+Added focused tests for protected API boundaries and ticket status history
+creation. Documented the project's testing strategy and how to decide what layer
+should own a test.
+
+### Reason For Change
+
+Recent phases added security and persistence side effects. Those are exactly the
+areas that regress during refactors if tests only cover happy-path CRUD.
+
+### What Skill This Teaches
+
+This phase teaches test selection: unit tests for business rules and helper
+logic, integration tests for HTTP boundaries, and side-effect tests for audit
+behavior.
+
+### Tradeoffs
+
+The tests still do not use a dedicated test database for full login flows. That
+is a worthwhile future improvement, but the current tests add useful protection
+without requiring a larger test harness.
+
+### Future Improvement Ideas
+
+- Add database-backed auth integration tests.
+- Add frontend tests for protected routes and TanStack Query states.
+- Add Playwright smoke tests for login and ticket creation.
+
+### Debugging Notes
+
+If a service test fails after a repository change, inspect the mock contract. If
+an integration test returns `400`, check validation first; if it returns `401` or
+`403`, check auth middleware.
+
+### Review Checklist
+
+- Do tests protect important behavior?
+- Are auth failures covered?
+- Are side effects like history writes covered?
+- Does the documentation explain what not to over-test?

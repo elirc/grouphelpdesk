@@ -46,6 +46,12 @@ function createMockPrisma() {
     activityLog: {
       create: vi.fn().mockResolvedValue({ id: 'activity_1' }),
     },
+    ticketStatusHistory: {
+      create: vi.fn().mockResolvedValue({ id: 'status_history_1' }),
+    },
+    ticketAssignmentHistory: {
+      create: vi.fn().mockResolvedValue({ id: 'assignment_history_1' }),
+    },
   };
 }
 
@@ -90,5 +96,30 @@ describe('ticketService', () => {
     await expect(service.updateTicket('missing', { title: 'Nope' })).rejects.toBeInstanceOf(
       NotFoundError,
     );
+  });
+
+  it('records structured history when a ticket status changes', async () => {
+    const prisma = createMockPrisma();
+    prisma.ticket.findUnique.mockResolvedValueOnce(
+      mockTicket({ status: TicketStatus.IN_PROGRESS, assigneeId: 'agent_1' }),
+    );
+    prisma.ticket.update.mockResolvedValueOnce(
+      mockTicket({ status: TicketStatus.RESOLVED, assigneeId: 'agent_1' }),
+    );
+    const service = createTicketService(prisma as never);
+
+    await service.updateTicket('ticket_1', {
+      status: TicketStatus.RESOLVED,
+      actorId: 'user_agent_1',
+    });
+
+    expect(prisma.ticketStatusHistory.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        ticketId: 'ticket_1',
+        changedBy: 'user_agent_1',
+        fromStatus: TicketStatus.IN_PROGRESS,
+        toStatus: TicketStatus.RESOLVED,
+      }),
+    });
   });
 });
