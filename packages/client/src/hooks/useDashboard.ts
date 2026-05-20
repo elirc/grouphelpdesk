@@ -1,44 +1,45 @@
 // Author: Sam Rivera
-// Issue: #32 â€” Fetch dashboard metrics and activity
+// Issue: Learning Phase 5 - Cache dashboard server state with TanStack Query
 
-import { useEffect, useState } from 'react';
-import type { AgentWorkload, DashboardMetrics, SystemHealth } from '@helpdesk/shared';
+import { useQuery } from '@tanstack/react-query';
 
 import { api } from '../services/api';
+import { queryKeys } from '../services/queryKeys';
+
+function toErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+export function useDashboardQuery() {
+  return useQuery({
+    queryKey: queryKeys.dashboard,
+    queryFn: async () => {
+      const [metrics, activity, workload, system] = await Promise.all([
+        api.dashboard.metrics(),
+        api.dashboard.activity(),
+        api.dashboard.workload(),
+        api.dashboard.system(),
+      ]);
+
+      return {
+        metrics: metrics.data,
+        activity: activity.data,
+        workload: workload.data,
+        system: system.data,
+      };
+    },
+  });
+}
 
 export function useDashboard() {
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [activity, setActivity] = useState<unknown[]>([]);
-  const [workload, setWorkload] = useState<AgentWorkload[]>([]);
-  const [system, setSystem] = useState<SystemHealth | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useDashboardQuery();
 
-  useEffect(() => {
-    async function loadDashboard() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const [metricsResult, activityResult, workloadResult, systemResult] = await Promise.all([
-          api.dashboard.metrics(),
-          api.dashboard.activity(),
-          api.dashboard.workload(),
-          api.dashboard.system(),
-        ]);
-        setMetrics(metricsResult.data);
-        setActivity(activityResult.data);
-        setWorkload(workloadResult.data);
-        setSystem(systemResult.data);
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : 'Failed to load dashboard.');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadDashboard();
-  }, []);
-
-  return { metrics, activity, workload, system, loading, error };
+  return {
+    metrics: query.data?.metrics ?? null,
+    activity: query.data?.activity ?? [],
+    workload: query.data?.workload ?? [],
+    system: query.data?.system ?? null,
+    loading: query.isLoading,
+    error: query.error ? toErrorMessage(query.error, 'Failed to load dashboard.') : null,
+  };
 }

@@ -351,3 +351,60 @@ so users have `passwordHash` values.
 - Does login avoid returning `passwordHash`?
 - Are frontend route guards treated as UX, not security?
 - Are the remaining auth limitations documented honestly?
+
+## 2026-05-20 - Phase 5: Frontend Server State Upgrade
+
+### Files Changed
+
+- `packages/client/package.json`
+- `packages/client/src/App.tsx`
+- `packages/client/src/services/queryClient.ts`
+- `packages/client/src/services/queryKeys.ts`
+- `packages/client/src/hooks/useTickets.ts`
+- `packages/client/src/hooks/useComments.ts`
+- `packages/client/src/hooks/useDashboard.ts`
+- `docs/learning/frontend-server-state-guide.md`
+
+### Summary Of Change
+
+Added TanStack Query and moved ticket, comment, and dashboard fetching from
+manual `useEffect` state machines into query and mutation hooks. The existing
+hook return shapes were preserved where practical so the UI could migrate
+incrementally.
+
+### Reason For Change
+
+Manual frontend fetching had repeated loading/error logic and no shared cache
+invalidation model. That works in a small demo, but it becomes hard to reason
+about as CRUD features grow.
+
+### What Skill This Teaches
+
+This teaches the difference between client state and server state. It also
+teaches stable query keys, mutation invalidation, and how to improve data flow
+without rewriting every component.
+
+### Tradeoffs
+
+The app now has another dependency and a new abstraction to learn. Some hooks
+still expose the old `{ loading, error }` shape as a compatibility layer, so the
+codebase is in an intentional transition state.
+
+### Future Improvement Ideas
+
+- Move user and knowledge-base data fetching to TanStack Query.
+- Add `useCreateTicketMutation` to the create-ticket page.
+- Add optimistic assignment updates.
+- Add frontend tests for loading, error, and mutation states.
+
+### Debugging Notes
+
+If data looks stale, check `queryKeys.ts` and mutation `onSuccess` handlers.
+Most React Query bugs in CRUD apps are cache-key or invalidation bugs.
+
+### Review Checklist
+
+- Are query keys reused consistently?
+- Do mutations invalidate affected list/detail queries?
+- Is the API client still centralized?
+- Did the phase avoid a giant frontend rewrite?

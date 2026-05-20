@@ -2,6 +2,7 @@
 // Issue: #6 â€” Configure React Router routes
 
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
 
 import { AuthProvider } from './auth/AuthProvider';
 import { ProtectedRoute } from './auth/ProtectedRoute';
@@ -12,6 +13,7 @@ import KnowledgeBasePage from './pages/KnowledgeBasePage';
 import LoginPage from './pages/LoginPage';
 import TicketDetailPage from './pages/TicketDetailPage';
 import TicketsPage from './pages/TicketsPage';
+import { queryClient } from './services/queryClient';
 
 const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
@@ -35,8 +37,10 @@ const router = createBrowserRouter([
 
 export function App() {
   return (
-    <AuthProvider>
-      <RouterProvider router={router} />
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }

@@ -1,74 +1,76 @@
 // Author: Sam Rivera
-// Issue: #7 â€” Manage ticket data fetching state
+// Issue: Learning Phase 5 - Manage ticket server state with TanStack Query
 
-import { useEffect, useState } from 'react';
-import type { Ticket, TicketFilters } from '@helpdesk/shared';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { Ticket, TicketFilters, UpdateTicketInput } from '@helpdesk/shared';
 
 import { api } from '../services/api';
+import { queryKeys } from '../services/queryKeys';
+
+function toErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+export function useTicketsQuery(filters: TicketFilters = {}) {
+  return useQuery({
+    queryKey: queryKeys.tickets.list(filters),
+    queryFn: () => api.tickets.list(filters),
+  });
+}
 
 export function useTickets(filters: TicketFilters = {}) {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const query = useTicketsQuery(filters);
 
-  useEffect(() => {
-    let isCurrent = true;
+  return {
+    tickets: query.data?.data ?? [],
+    loading: query.isLoading,
+    error: query.error ? toErrorMessage(query.error, 'Failed to load tickets.') : null,
+  };
+}
 
-    async function loadTickets() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await api.tickets.list(filters);
-        if (isCurrent) {
-          setTickets(response.data);
-        }
-      } catch (caught) {
-        if (isCurrent) {
-          setError(caught instanceof Error ? caught.message : 'Failed to load tickets.');
-        }
-      } finally {
-        if (isCurrent) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadTickets();
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [JSON.stringify(filters)]);
-
-  return { tickets, loading, error };
+export function useTicketQuery(id: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.tickets.detail(id ?? 'missing'),
+    queryFn: () => api.tickets.get(id!),
+    enabled: Boolean(id),
+  });
 }
 
 export function useTicket(id: string | undefined) {
-  const [ticket, setTicket] = useState<Ticket | null>(null);
-  const [loading, setLoading] = useState(Boolean(id));
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const query = useTicketQuery(id);
 
-  useEffect(() => {
-    if (!id) return;
-    const ticketId = id;
+  return {
+    ticket: query.data?.data ?? null,
+    loading: query.isLoading,
+    error: query.error ? toErrorMessage(query.error, 'Failed to load ticket.') : null,
+    setTicket(ticket: Ticket) {
+      queryClient.setQueryData(queryKeys.tickets.detail(ticket.id), { data: ticket });
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+    },
+  };
+}
 
-    async function loadTicket() {
-      setLoading(true);
-      setError(null);
+export function useUpdateTicketMutation(id: string) {
+  const queryClient = useQueryClient();
 
-      try {
-        const response = await api.tickets.get(ticketId);
-        setTicket(response.data);
-      } catch (caught) {
-        setError(caught instanceof Error ? caught.message : 'Failed to load ticket.');
-      } finally {
-        setLoading(false);
-      }
-    }
+  return useMutation({
+    mutationFn: (input: UpdateTicketInput) => api.tickets.update(id, input),
+    onSuccess(response) {
+      queryClient.setQueryData(queryKeys.tickets.detail(id), response);
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+    },
+  });
+}
 
-    loadTicket();
-  }, [id]);
+export function useAssignTicketMutation(id: string) {
+  const queryClient = useQueryClient();
 
-  return { ticket, loading, error, setTicket };
+  return useMutation({
+    mutationFn: (assigneeId: string) => api.tickets.assign(id, assigneeId),
+    onSuccess(response) {
+      queryClient.setQueryData(queryKeys.tickets.detail(id), response);
+      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+    },
+  });
 }

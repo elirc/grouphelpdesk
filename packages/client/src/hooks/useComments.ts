@@ -1,40 +1,51 @@
 // Author: Sam Rivera
-// Issue: #13 â€” Manage ticket comment state
+// Issue: Learning Phase 5 - Manage comment server state with TanStack Query
 
-import { useEffect, useState } from 'react';
-import type { Comment } from '@helpdesk/shared';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { CreateCommentInput } from '@helpdesk/shared';
 
 import { api } from '../services/api';
+import { queryKeys } from '../services/queryKeys';
+
+function toErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+export function useCommentsQuery(ticketId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.comments(ticketId ?? 'missing'),
+    queryFn: () => api.comments.list(ticketId!, true),
+    enabled: Boolean(ticketId),
+  });
+}
+
+export function useCreateCommentMutation(ticketId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: Omit<CreateCommentInput, 'ticketId'>) =>
+      api.comments.create({ ...input, ticketId: ticketId! }),
+    onSuccess() {
+      if (ticketId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.comments(ticketId) });
+      }
+    },
+  });
+}
 
 export function useComments(ticketId: string | undefined) {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [loading, setLoading] = useState(Boolean(ticketId));
-  const [error, setError] = useState<string | null>(null);
+  const query = useCommentsQuery(ticketId);
+  const createComment = useCreateCommentMutation(ticketId);
 
-  async function refresh() {
-    if (!ticketId) return;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await api.comments.list(ticketId, true);
-      setComments(response.data);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Failed to load comments.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function addComment(body: string, authorId: string, isInternal: boolean) {
-    if (!ticketId) return;
-    const response = await api.comments.create({ ticketId, body, authorId, isInternal });
-    setComments((current) => [...current, response.data]);
-  }
-
-  useEffect(() => {
-    refresh();
-  }, [ticketId]);
-
-  return { comments, loading, error, addComment, refresh };
+  return {
+    comments: query.data?.data ?? [],
+    loading: query.isLoading,
+    error: query.error ? toErrorMessage(query.error, 'Failed to load comments.') : null,
+    async addComment(body: string, _authorId: string, isInternal: boolean) {
+      await createComment.mutateAsync({ body, isInternal });
+    },
+    refresh() {
+      return query.refetch();
+    },
+  };
 }
