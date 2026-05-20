@@ -67,15 +67,17 @@ describe('ticketService', () => {
     expect(prisma.activityLog.create).toHaveBeenCalled();
   });
 
-  it('rejects a ticket without a title', async () => {
-    const service = createTicketService(createMockPrisma() as never);
+  it('rejects a ticket when the creator does not exist', async () => {
+    const prisma = createMockPrisma();
+    prisma.user.findUnique.mockResolvedValueOnce(null);
+    const service = createTicketService(prisma as never);
 
     await expect(
       service.createTicket({
-        title: '',
-        description: 'Missing title',
+        title: 'Need help',
+        description: 'The requester id does not exist',
         priority: Priority.LOW,
-        createdBy: 'user_requester_1',
+        createdBy: 'missing_user',
       }),
     ).rejects.toBeInstanceOf(ValidationError);
   });

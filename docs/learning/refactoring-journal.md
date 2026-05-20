@@ -174,3 +174,93 @@ failed.
 - Do validation errors return `400` consistently?
 - Do services still own workflow and permission-style rules?
 - Are invalid-input tests present?
+
+## 2026-05-20 - Phase 3: Ticket Domain Modular Refactor
+
+### Files Changed
+
+- `packages/server/src/modules/tickets/ticket.routes.ts`
+- `packages/server/src/modules/tickets/ticket.controller.ts`
+- `packages/server/src/modules/tickets/ticket.schema.ts`
+- `packages/server/src/modules/tickets/ticket.service.ts`
+- `packages/server/src/modules/tickets/ticket.repository.ts`
+- `packages/server/src/modules/tickets/ticket.mapper.ts`
+- `packages/server/src/modules/tickets/ticket.permissions.ts`
+- `packages/server/src/modules/tickets/ticket.types.ts`
+- `packages/server/src/modules/tickets/ticket.test.ts`
+- `packages/server/src/routes/tickets.ts`
+- `packages/server/src/controllers/ticketController.ts`
+- `packages/server/src/services/ticketService.ts`
+- `tests/unit/ticketService.test.ts`
+- `docs/learning/backend-module-architecture-guide.md`
+- `docs/learning/ticket-domain-walkthrough.md`
+
+### Summary Of Change
+
+Moved the ticket backend into a feature module with separate route, controller,
+schema, service, repository, mapper, permission, and type files. The old
+route/controller/service files now act as compatibility exports so existing code
+keeps working while new ticket work has a clearer home.
+
+### Reason For Change
+
+The ticket domain has grown beyond basic CRUD. It now includes pagination,
+filtering, assignment rules, status transition rules, activity logging, and
+response mapping. Keeping those concerns in broad folders makes the feature
+harder to trace and review.
+
+This phase creates a reference implementation for future backend modules.
+
+### What Skill This Teaches
+
+This teaches separation of responsibilities in a real CRUD backend:
+
+- routes register endpoints and middleware
+- schemas validate untrusted HTTP input
+- controllers translate HTTP to application calls
+- services own business rules
+- repositories own Prisma persistence details
+- mappers shape database records for API responses
+- permission helpers isolate authorization-style questions
+
+Mid-level engineers are expected to know where a change belongs and to avoid
+turning controllers into catch-all files.
+
+### Tradeoffs
+
+The module pattern adds files and indirection. For a tiny app, that can feel like
+ceremony. In this repo it is justified because HelpDesk is intentionally a
+learning artifact for larger full-stack CRUD systems.
+
+Only tickets were refactored. Comments, users, dashboard, and knowledge base
+still use the older folder-by-layer layout. That is intentional: one safe module
+is better than an uncontrolled rewrite.
+
+### Future Improvement Ideas
+
+- Move comments into `modules/comments/` once auth and visibility rules are
+  upgraded.
+- Move permission helpers from simple role checks to auth-aware current-user
+  checks in Phase 4.
+- Add repository tests for complex filters.
+- Normalize tags so the mapper no longer has to parse serialized tag data.
+
+### Debugging Notes
+
+For ticket requests, debug in this order:
+
+```text
+route schema -> controller -> service -> repository -> mapper
+```
+
+A `400` points to schema validation. A `422` points to service-level business
+rules. Incorrect database filtering points to the repository. Incorrect response
+shape points to the mapper.
+
+### Review Checklist
+
+- Are ticket changes inside `modules/tickets/`?
+- Are compatibility exports still present?
+- Does the service avoid Express-specific response concerns?
+- Does the repository avoid workflow decisions?
+- Are tests aligned with the new responsibility boundaries?
