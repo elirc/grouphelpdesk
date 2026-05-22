@@ -63,6 +63,20 @@ Run the client in another terminal:
 npm run dev --workspace @helpdesk/client
 ```
 
+## Seeded Accounts
+
+After `db:seed`, sign in with one of these demo users:
+
+| Role     | Email                         | Password      |
+| -------- | ----------------------------- | ------------- |
+| Customer | `riley.requester@example.com` | `customer123` |
+| Agent    | `avery.agent@example.com`     | `agent123`    |
+| Admin    | `casey.admin@example.com`     | `admin123`    |
+
+The auth flow is intentionally learning-friendly: sessions are stored in memory
+and bearer tokens are stored in browser localStorage. That keeps the code easy to
+read while leaving room for a future production-grade session design.
+
 ## Logs
 
 The API writes structured JSON logs through Pino. For easier local reading:

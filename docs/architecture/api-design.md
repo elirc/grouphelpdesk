@@ -18,6 +18,15 @@ Responses use JSON. Errors use:
 }
 ```
 
+Most application endpoints require:
+
+```text
+Authorization: Bearer <session-token>
+```
+
+Use `POST /api/auth/login` to obtain a token. The current implementation is a
+learning-friendly opaque session token, not a production session design.
+
 Paginated endpoints use:
 
 ```text
@@ -40,6 +49,43 @@ and respond with:
 
 ## Tickets
 
+Ticket endpoints require authentication. Mutating status, assignment, and delete
+operations require agent/admin-style permissions depending on the route.
+
+### `POST /api/auth/login`
+
+```json
+{
+  "email": "avery.agent@example.com",
+  "password": "agent123"
+}
+```
+
+Returns:
+
+```json
+{
+  "data": {
+    "token": "opaque-session-token",
+    "user": {
+      "id": "user_agent_1",
+      "name": "Avery Agent",
+      "email": "avery.agent@example.com",
+      "role": "AGENT",
+      "teamId": "team-it"
+    }
+  }
+}
+```
+
+### `GET /api/auth/me`
+
+Returns the current authenticated user.
+
+### `POST /api/auth/logout`
+
+Deletes the current in-memory session and returns `204`.
+
 ### `POST /api/tickets`
 
 Creates a ticket.
@@ -49,12 +95,14 @@ Creates a ticket.
   "title": "Cannot access payroll",
   "description": "The dashboard is blank.",
   "priority": "HIGH",
-  "createdBy": "user_requester_1",
   "tags": ["payroll", "access"]
 }
 ```
 
 Returns `201` with `{ "data": Ticket }`.
+
+The server derives `createdBy` from the authenticated user. Client-provided
+identity fields are ignored for authorization-sensitive behavior.
 
 ### `GET /api/tickets`
 
@@ -80,8 +128,7 @@ Assigns a ticket to an agent or admin.
 
 ```json
 {
-  "assigneeId": "user_agent_1",
-  "actorId": "user_agent_1"
+  "assigneeId": "user_agent_1"
 }
 ```
 
@@ -95,16 +142,19 @@ Deletes a ticket and returns `{ "data": { "id": "...", "deleted": true } }`.
 
 ```json
 {
-  "authorId": "user_agent_1",
   "body": "I am checking the VPN profile.",
   "isInternal": true
 }
 ```
 
+The server derives `authorId` from the authenticated user. Customers/requesters
+cannot create internal notes.
+
 ### `GET /api/tickets/:ticketId/comments`
 
 Supports `includeInternal=true` and `viewerRole=AGENT`. Requesters never receive
-internal notes.
+internal notes. `viewerRole` is retained only as a backward-compatible optional
+query shape; visibility is based on the authenticated user's server-side role.
 
 ## Users
 

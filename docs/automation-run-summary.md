@@ -64,5 +64,18 @@ npm run typecheck
 npm test
 ```
 
-Then continue with a Phase 5 improvement such as real authentication, WebSocket
-updates, PostgreSQL migrations, or RBAC.
+## Later Improvement Pass
+
+After the original Phases 1-4 automation pass, the repo received a second
+learning-focused improvement pass covering:
+
+- Zod runtime validation
+- ticket-domain module architecture
+- learning-friendly authentication and RBAC
+- TanStack Query server-state management
+- organization/team and ticket-history database modeling
+- expanded tests around auth and history behavior
+- debugging, code review, and senior decision documentation
+
+If work resumes later, start with the remaining follow-up items in
+`docs/learning/refactoring-retrospective.md`.

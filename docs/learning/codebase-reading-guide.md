@@ -85,17 +85,18 @@ connects HTTP methods to controller functions.
 [packages/server/src/controllers/ticketController.ts](../../packages/server/src/controllers/ticketController.ts)
 turns Express requests into service calls.
 
-Current learning note: the controller still manually parses some inputs. That is
-why Phase 2 will add schema-based validation.
+Current learning note: ticket routes now validate request input with Zod before
+controllers run. The controller reads validated data from `res.locals` and keeps
+HTTP mapping separate from business rules.
 
 ### Service And Database
 
-[packages/server/src/services/ticketService.ts](../../packages/server/src/services/ticketService.ts)
-owns ticket rules and Prisma calls.
+[packages/server/src/modules/tickets/ticket.service.ts](../../packages/server/src/modules/tickets/ticket.service.ts)
+owns ticket rules.
 
-Current learning note: the service currently mixes business rules, persistence,
-mapping, and activity logging. That is useful for an early project, but Phase 3
-will split tickets into a clearer module.
+Current learning note: tickets are now the reference module. Read
+`ticket.repository.ts` for Prisma queries, `ticket.mapper.ts` for response
+mapping, and `ticket.permissions.ts` for permission-style decisions.
 
 ## What Changed In This Phase
 
@@ -144,17 +145,19 @@ Read in this order:
 1. `CreateTicketPage.tsx`
 2. `TicketForm.tsx`
 3. `api.ts`
-4. `ticketController.ts`
-5. `ticketService.ts`
-6. `activityLogService.ts`
-7. `schema.prisma`
+4. `ticket.routes.ts`
+5. `ticket.controller.ts`
+6. `ticket.service.ts`
+7. `ticket.repository.ts`
+8. `activityLogService.ts`
+9. `schema.prisma`
 
 Questions to ask:
 
 - Which fields come from the form?
-- Which fields are hardcoded demo IDs?
+- Which fields come from the authenticated current user?
 - What validation happens in the client?
-- What validation happens in the server?
+- What validation happens in the server through Zod?
 - Where is the activity log written?
 
 ### Trace 3: Add Internal Comment
@@ -173,8 +176,8 @@ Questions to ask:
 
 - Who decides whether a comment is internal?
 - How does the API decide whether internal comments are visible?
-- What user identity does the server trust today?
-- Why is this a security concern?
+- What user identity does the server derive from auth?
+- Why would trusting a client-provided role be a security concern?
 
 ## Common Mistakes
 
@@ -206,5 +209,7 @@ Questions to ask:
 2. Add a temporary `console.log` in the API client and predict when it fires.
 3. Add a temporary log in `ticketService.createTicket` and compare it to the
    client log.
-4. Find every place `createdBy`, `actorId`, or `viewerRole` appears.
-5. Write down which files should change when validation moves to Zod.
+4. Find every place `createdBy`, `actorId`, or `viewerRole` appears and decide
+   whether it is still trusted or only backward-compatible shape.
+5. Compare the ticket module to the older comment service and identify what
+   would move in a future comments module refactor.

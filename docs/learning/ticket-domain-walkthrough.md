@@ -122,4 +122,5 @@ For `GET /api/tickets`:
 2. Write an integration test for `GET /api/tickets?search=password`.
 3. Move comment routes into a `modules/comments/` folder.
 4. Refactor tag storage from serialized data to a normalized tag table.
-5. Explain why `actorId` is still a security smell before Phase 4 auth.
+5. Explain how Phase 4 reduced the `actorId` security smell by deriving the
+   actor from `req.currentUser`.

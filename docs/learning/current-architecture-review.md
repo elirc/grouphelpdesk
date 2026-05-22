@@ -4,9 +4,15 @@
 
 ## Purpose
 
-This review explains the current HelpDesk architecture as it exists today. It is
-not a takedown and it is not a victory lap. It is a practical engineering review:
-what works, what teaches well, what is risky, and what to improve next.
+This review was written at the start of the improvement cycle. It explains the
+baseline HelpDesk architecture before the Phase 2-8 upgrades. It is intentionally
+kept as a historical review so learners can see what risks were identified
+before validation, auth, modular ticket architecture, TanStack Query, and richer
+database modeling were added.
+
+For the current post-improvement state, read
+`docs/learning/refactoring-retrospective.md` and
+`docs/architecture/system-overview.md`.
 
 ## What Files To Read
 
@@ -51,9 +57,13 @@ check integration test.
 
 ## What Is Missing
 
+Historical note: the items in this section were missing at the start of the
+improvement cycle. Most of them have now been addressed in later phases. They are
+left here as the original architecture review, not as the current backlog.
+
 ### Runtime validation
 
-Controllers currently parse request input manually. Example:
+Controllers parsed request input manually. Example:
 
 ```ts
 const status = splitQuery(req.query.status) as TicketStatus[] | undefined;
@@ -62,7 +72,7 @@ const status = splitQuery(req.query.status) as TicketStatus[] | undefined;
 That cast tells TypeScript what we hope is true. It does not prove the incoming
 HTTP value is valid.
 
-What is missing:
+What was missing:
 
 - schema-based request validation
 - readable validation errors
@@ -70,13 +80,13 @@ What is missing:
 
 ### Authentication and authorization
 
-The server currently trusts fields like `createdBy`, `actorId`, and `viewerRole`
-from the client.
+The server trusted fields like `createdBy`, `actorId`, and `viewerRole` from the
+client.
 
 That is acceptable for an early learning scaffold, but it is not safe for a real
 CRUD app. A user should not be able to send another user's ID and act as them.
 
-What is missing:
+What was missing:
 
 - login
 - password hashing
@@ -86,7 +96,7 @@ What is missing:
 
 ### Ticket module boundaries
 
-`ticketService.ts` currently handles:
+`ticketService.ts` handled:
 
 - validation
 - business rules
@@ -96,7 +106,7 @@ What is missing:
 
 That is too much for one file as the domain grows.
 
-What is missing:
+What was missing:
 
 - ticket repository
 - ticket mapper
@@ -106,11 +116,11 @@ What is missing:
 
 ### Frontend server state management
 
-Hooks like `useTickets` manually track loading, error, cancellation, and response
-state. That is a good learning step, but it becomes repetitive once mutations and
-invalidation matter.
+Hooks like `useTickets` manually tracked loading, error, cancellation, and
+response state. That was a good learning step, but it became repetitive once
+mutations and invalidation mattered.
 
-What is missing:
+What was missing:
 
 - stable query keys
 - query cache
@@ -124,7 +134,7 @@ The Prisma schema stores tags and activity details as strings. That was a
 reasonable SQLite-friendly shortcut, but it limits what learners can practice
 with relational modeling.
 
-What is missing:
+What was missing:
 
 - normalized tags
 - teams as first-class rows
@@ -148,7 +158,7 @@ relationships" problem.
 
 ## How The Current Pattern Works
 
-Current ticket list flow:
+Baseline ticket list flow:
 
 ```text
 TicketsPage
@@ -160,7 +170,7 @@ TicketsPage
   -> prisma.ticket.findMany
 ```
 
-Current ticket creation flow:
+Baseline ticket creation flow:
 
 ```text
 TicketForm
@@ -172,7 +182,7 @@ TicketForm
   -> activityLogService.logActivity
 ```
 
-Current comment visibility flow:
+Baseline comment visibility flow:
 
 ```text
 CommentThread
@@ -182,9 +192,8 @@ CommentThread
   -> commentService.getComments
 ```
 
-The last flow is intentionally the most important risk. The server should not
-trust `viewerRole` from the query string. Phase 4 will replace that with
-authenticated request context.
+The last flow was intentionally the most important risk. Phase 4 replaced trust
+in `viewerRole` with authenticated request context.
 
 ## What Changed In This Phase
 

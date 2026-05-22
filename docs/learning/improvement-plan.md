@@ -313,7 +313,8 @@ Low. Documentation-only.
 
 1. Trace `POST /api/tickets` from the React form to Prisma and write down every
    file involved.
-2. Find every place the server currently trusts a client-provided user or role.
+2. Find every place the server used to trust a client-provided user or role, then
+   compare it to the current auth-backed implementation.
 3. Write three invalid ticket creation payloads that TypeScript cannot prevent at
    runtime.
 4. Sketch what the ticket module should look like before moving any files.

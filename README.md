@@ -17,6 +17,10 @@ inside one TypeScript monorepo.
 - Knowledge base article CRUD with markdown preview/rendering
 - Structured Pino logging with request IDs
 - Docker Compose and GitHub Actions CI
+- Learning-friendly authentication and RBAC
+- Runtime request validation with Zod
+- TanStack Query server-state caching
+- Organization, team, status-history, and assignment-history models
 
 ## Team Roster
 
@@ -71,6 +75,14 @@ npm run dev --workspace @helpdesk/server
 npm run dev --workspace @helpdesk/client
 ```
 
+Seeded login accounts:
+
+| Role     | Email                         | Password      |
+| -------- | ----------------------------- | ------------- |
+| Customer | `riley.requester@example.com` | `customer123` |
+| Agent    | `avery.agent@example.com`     | `agent123`    |
+| Admin    | `casey.admin@example.com`     | `admin123`    |
+
 Or run with Docker:
 
 ```bash
@@ -99,4 +111,5 @@ tests/            Unit and integration tests
 
 Read [CONTRIBUTING.md](./CONTRIBUTING.md) for workflow conventions and
 [docs/guides/getting-started.md](./docs/guides/getting-started.md) for detailed
-setup notes.
+setup notes. The learning-focused improvement docs start at
+[docs/learning/improvement-plan.md](./docs/learning/improvement-plan.md).
