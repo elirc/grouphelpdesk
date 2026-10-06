@@ -105,6 +105,10 @@ repo it turns serialized database tags into string arrays and serializes dates.
 
 `ticket.permissions.ts` holds small permission-style decisions. These are simple
 today, but this file becomes important when real authentication and RBAC arrive.
+(Status 2026-10-06: Phase 4 added auth, but role checks went into route
+middleware (`requireRole` in `ticket.routes.ts`), and this file still holds only
+`canBeAssignedTicket` and `canMoveToInProgress`. Per-ticket rules such as "a
+customer may view only their own ticket" have no home yet.)
 
 ## What Changed
 

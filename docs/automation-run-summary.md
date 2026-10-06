@@ -33,6 +33,15 @@ The frontend uses deterministic seeded IDs for demo create/comment flows:
 - `user_agent_1`
 - `user_admin_1`
 
+> **Status note (2026-10-06):** Since the Phase 4 auth work, the server takes
+> identity from the bearer token and ignores client-sent IDs. The client still
+> passes two of these seeded IDs as leftovers: `user_agent_1`
+> (`packages/client/src/pages/TicketDetailPage.tsx:17`, sent as the assign
+> `actorId`; it's also passed as the comment author, but `useComments.ts:44`
+> drops it before the request) and `user_admin_1`
+> (`packages/client/src/components/knowledge-base/ArticleForm.tsx:14`, sent as
+> `authorId`). The server overrides both with `req.currentUser!.id`.
+
 The server test command runs Vitest from the monorepo root so tests in `tests/`
 are discovered while still using the server workspace script.
 

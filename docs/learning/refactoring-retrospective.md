@@ -30,7 +30,13 @@ Auth uses in-memory sessions and localStorage tokens. That is acceptable for
 learning but not production-ready.
 
 Organization scoping exists in the schema but is not enforced across every
-query.
+query. (Checked 2026-10-06: `grep -rn organization packages/server/src` finds
+nothing, so no query enforces it yet.)
+
+Authorization on reads is incomplete. Customers can list and read every ticket,
+and three endpoints return `passwordHash` inside nested user objects. See
+[security-mistakes-in-crud-apps.md](security-mistakes-in-crud-apps.md#known-gaps-in-this-repo)
+(added 2026-10-06).
 
 Frontend tests are still missing.
 

@@ -35,7 +35,8 @@ Here is the create-ticket flow:
 ```text
 POST /api/tickets
   -> ticket.routes.ts validates the body with createTicketBodySchema
-  -> ticket.controller.ts reads the validated body
+  -> requireAuth rejects requests with no session (401)
+  -> ticket.controller.ts reads the validated body and sets createdBy from req.currentUser
   -> ticket.service.ts checks creator and assignee business rules
   -> ticket.repository.ts creates the Prisma record
   -> activityLogService.ts records CREATED
@@ -47,6 +48,18 @@ The important teaching detail is that each layer trusts the layer before it only
 for the correct thing. The controller can trust the route middleware for request
 shape. The service does not trust the controller for business rules. The mapper
 does not trust the database shape to be the final API shape.
+
+That last sentence is only half true today. `mapTicketToResponse`
+(`ticket.mapper.ts:21-29`) fixes tags and dates but spreads every other field
+through, including the `assignee` and `creator` relations that
+`findTicketById` includes (`ticket.repository.ts:39-42`). Those are full `User`
+rows, so `GET /api/tickets/:id` returns both users' `passwordHash`. A mapper
+that owns the API shape would list the fields it returns.
+
+Note the order in the route, too: validation runs *before* `requireAuth`
+(`ticket.routes.ts:27`). An anonymous caller with a malformed body gets `400`
+with field details, not `401`. `tests/integration/validation.test.ts:64` pins
+that a *valid* anonymous request gets `401`.
 
 ## What Changed
 
@@ -124,3 +137,10 @@ For `GET /api/tickets`:
 4. Refactor tag storage from serialized data to a normalized tag table.
 5. Explain how Phase 4 reduced the `actorId` security smell by deriving the
    actor from `req.currentUser`.
+6. **Make the mapper own the response shape.**
+   *Goal:* stop spreading Prisma records into responses.
+   Rewrite `mapTicketToResponse` to build its output field by field, mapping
+   `assignee` and `creator` to `{ id, name, email, role }`.
+   **Check:** extend `packages/server/src/modules/tickets/ticket.test.ts` with a
+   record whose `creator` has a `passwordHash`, and assert the mapped output has
+   no `passwordHash` key at any depth. Run `npm test`.

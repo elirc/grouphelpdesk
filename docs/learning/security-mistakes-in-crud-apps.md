@@ -85,10 +85,92 @@ current user's role before allowing internal content.
 - Are tests covering unauthorized and forbidden cases?
 - Are docs honest about remaining limitations?
 
+## Known Gaps In This Repo
+
+Verified against the code on 2026-10-06. Each one is a mistake from the list
+above that the repo still makes. Paths are relative to `packages/server/src/`.
+
+1. **Password hashes leave the server.** The login response is safe
+   (`tests/unit/authService.test.ts:27` checks it), but three read paths return
+   whole Prisma `User` rows, and Prisma returns every scalar column unless you
+   `select` or `omit` it:
+   - `GET /api/users`: `services/userService.ts:13-18` calls `findMany` with no
+     `select`. The route only needs `requireAuth` (`routes/users.ts:13`), so a
+     customer can list every user's `passwordHash`.
+   - `GET /api/tickets/:id`: `modules/tickets/ticket.repository.ts:39-42`
+     includes `assignee: true` and `creator: true`, and `ticket.mapper.ts:21-29`
+     spreads the record into the response.
+   - `GET /api/tickets/:ticketId/comments`: `services/commentService.ts:76`
+     includes `author: true`.
+2. **No ownership checks on reads.** `buildTicketWhere`
+   (`modules/tickets/ticket.repository.ts:16-28`) has no creator filter, and
+   `getTicket` (`modules/tickets/ticket.controller.ts:42-49`) has no ownership
+   check. Any logged-in customer can list and read every ticket and its public
+   comments.
+3. **Assignment bypass at creation.** `PATCH /:id/assign` requires an agent or
+   admin (`modules/tickets/ticket.routes.ts:29-35`), but `POST /api/tickets`
+   only needs `requireAuth`, and `createTicketBodySchema`
+   (`validation/ticketSchemas.ts:28-36`) accepts `assigneeId` and `teamId`. The
+   service checks that the assignee is an agent (`ticket.service.ts:33-38`) but
+   never checks who is asking, so a customer can create a ticket already
+   assigned to the agent of their choice.
+4. **`z.coerce.boolean()` on a query string.** `listCommentsQuerySchema`
+   (`validation/commentSchemas.ts:14`) coerces with `Boolean(value)`, and
+   `Boolean("false")` is `true`. So `?includeInternal=false` *includes* internal
+   notes for agents. It's latent today only because the client always sends
+   `true` (`packages/client/src/hooks/useComments.ts:17`). Customers are safe
+   because the role check at `commentService.ts:68-69` still applies.
+5. **Sessions never expire.** Tokens live in an in-memory `Map`
+   (`services/authService.ts:26`) with a `createdAt` that nothing reads. They
+   last until logout or a server restart, and a restart logs everyone out.
+6. **No login throttling.** `POST /api/auth/login` (`routes/auth.ts`) has no
+   rate limit and no failed-login log.
+
 ## Follow-Up Exercises
 
-1. Add `403` integration tests for customer access to dashboard routes.
-2. Add ticket ownership checks so customers can only read their own tickets.
-3. Add CSRF discussion notes if the app moves to cookie-based sessions.
-4. Add rate limiting to login.
-5. Add password reset design notes without implementing the feature.
+1. **Stop leaking password hashes.**
+   *Goal:* no API response contains `passwordHash`.
+   Add a shared `safeUserSelect` (id, name, email, role, teamId) and use it in
+   `userService.getUsers` and in the `include`s of `findTicketById` and
+   `getComments`.
+   **Check:** add an integration test that logs in as the seeded customer, calls
+   `GET /api/users`, `GET /api/tickets/:id` and the comments endpoint, and
+   asserts `JSON.stringify(response.body)` does not contain `passwordHash`. It
+   fails before your change and passes after it.
+2. **Customers read only their own tickets.**
+   *Goal:* close gap 2 without breaking agents.
+   Add `canViewTicket(currentUser, ticket)` to `ticket.permissions.ts` and a
+   `createdBy` filter in `buildTicketWhere` when the caller is a customer.
+   **Check:** unit-test `canViewTicket` for all four roles, and add an
+   integration test where customer A gets `404` (not `403`, so ticket IDs don't
+   leak) for customer B's ticket.
+3. **Close the assignment bypass.**
+   *Goal:* only agents and admins can set `assigneeId` or `teamId`.
+   **Check:** an integration test where a customer POSTs a ticket with
+   `assigneeId` gets `403` (or has the field ignored, whichever you decide), and
+   your PR description says which you chose and why.
+4. **Prove the coercion bug with Node alone, then fix it.**
+   *Goal:* see why `z.coerce.boolean()` is wrong for query strings.
+   Create `scratch/coerce.test.mjs` at the repo root (delete it afterwards):
+
+   ```js
+   import { test } from "node:test";
+   import assert from "node:assert/strict";
+
+   test("query-string booleans: Boolean('false') is true", () => {
+     const raw = new URLSearchParams("includeInternal=false").get("includeInternal");
+     assert.equal(raw, "false");
+     assert.equal(Boolean(raw), true); // what z.coerce.boolean() does
+   });
+   ```
+
+   **Check:** `node --test scratch/coerce.test.mjs` passes. Then replace the
+   schema with `z.enum(["true", "false"]).transform((v) => v === "true")`, add a
+   case to `tests/integration/validation.test.ts`, and run `npm test`.
+5. Add `403` integration tests for customer access to dashboard routes.
+   `tests/integration/authz.test.ts` covers only the `401` cases today.
+   **Check:** the new test logs in as the seeded customer and gets `403` from
+   `/api/dashboard/metrics`.
+6. Add CSRF discussion notes if the app moves to cookie-based sessions.
+7. Add rate limiting to login, and log failed attempts with the email hashed.
+8. Add password reset design notes without implementing the feature.
